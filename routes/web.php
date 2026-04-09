@@ -28,6 +28,8 @@ Route::prefix('admin')
     ->middleware('auth')
     ->group(function () {
         Route::livewire('/dashboard', 'admin::dashboard')->name('dashboard');
+        Route::livewire('/projects', 'admin::project.project-list')->name('projects');
+        Route::livewire('/projects/{project}/sliders', 'admin::project.project-slider')->name('project-sliders');
         Route::livewire('/project-categories', 'admin::project-category-list')->name('project-categories');
         Route::livewire('/project-statuses', 'admin::status')->name('project-statuses');
         Route::livewire('/project-tags', 'admin::tag')->name('project-tags');

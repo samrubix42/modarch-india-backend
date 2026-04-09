@@ -44,6 +44,11 @@ class AdminSidebar
                         'url' => $this->routeIfExists('admin.project-categories'),
                     ],
                     (object) [
+                        'title' => 'Projects',
+                        'routeName' => 'admin.projects',
+                        'url' => $this->routeIfExists('admin.projects'),
+                    ],
+                    (object) [
                         'title' => 'Project Statuses',
                         'routeName' => 'admin.project-statuses',
                         'url' => $this->routeIfExists('admin.project-statuses'),
