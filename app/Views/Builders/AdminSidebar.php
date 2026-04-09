@@ -39,9 +39,9 @@ class AdminSidebar
                 'hasSubmenu' => true,
                 'submenu' => [
                     (object) [
-                        'title' => 'Categories',
-                        'routeName' => 'admin.categories',
-                        'url' => $this->routeIfExists('admin.categories'),
+                        'title' => 'Project Categories',
+                        'routeName' => 'admin.project-categories',
+                        'url' => $this->routeIfExists('admin.project-categories'),
                     ],
                     (object) [
                         'title' => 'Products',

@@ -28,7 +28,7 @@ Route::prefix('admin')
     ->middleware('auth')
     ->group(function () {
         Route::livewire('/dashboard', 'admin::dashboard')->name('dashboard');
-       
+        Route::livewire('/project-categories', 'admin::project-category-list')->name('project-categories');
     });
 
 

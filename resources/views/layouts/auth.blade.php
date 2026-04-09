@@ -11,7 +11,6 @@
 	</head>
 	<body class="min-h-screen bg-emerald-50 text-slate-800 antialiased">
 		{{ $slot }}
-
 		@livewireScripts
 	</body>
 </html>
