@@ -95,9 +95,9 @@
             </table>
         </div>
 
-        <div class="space-y-3 p-3 md:hidden">
+        <div wire:sort="sortItem" class="space-y-3 p-3 md:hidden">
             @forelse ($categories as $category)
-                <article wire:key="category-mobile-{{ $category->id }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article wire:key="category-mobile-{{ $category->id }}" wire:sort:item="{{ $category->id }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="truncate font-medium text-slate-900">{{ $category->name }}</p>
@@ -116,7 +116,7 @@
                         <div>
                             <p class="text-slate-400">Sort Order</p>
                             <div class="mt-1 flex items-center gap-2">
-                                <button type="button" class="rounded-md border border-slate-200 p-1 text-slate-500">
+                                <button type="button" wire:sort:handle class="cursor-grab rounded-md border border-slate-200 p-1 text-slate-500 active:cursor-grabbing">
                                     <i class="ri-draggable text-[13px]"></i>
                                 </button>
                                 <span class="inline-flex min-w-10 justify-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">{{ $category->sort_order }}</span>
