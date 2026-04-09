@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AppliedJobFileController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,11 @@ Route::prefix('admin')
         Route::livewire('/project-categories', 'admin::project-category-list')->name('project-categories');
         Route::livewire('/project-statuses', 'admin::status')->name('project-statuses');
         Route::livewire('/project-tags', 'admin::tag')->name('project-tags');
+        Route::livewire('/jobs/profiles', 'admin::job.job-profile-management')->name('job-profiles');
+        Route::livewire('/jobs/applied', 'admin::job.job-applied-list')->name('job-applied-list');
+        Route::get('/jobs/applied/{appliedJob}/download/{type}', [AppliedJobFileController::class, 'download'])
+            ->where('type', 'resume|portfolio')
+            ->name('applied-jobs.download');
         Route::livewire('/settings', 'admin::setting')->name('settings');
     });
 

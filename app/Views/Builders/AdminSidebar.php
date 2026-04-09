@@ -59,6 +59,24 @@ class AdminSidebar
                 ],
             ],
             (object) [
+                'title' => 'Jobs',
+                'icon' => 'ri-briefcase-4-line',
+                'url' => '#',
+                'hasSubmenu' => true,
+                'submenu' => [
+                    (object) [
+                        'title' => 'Job Profiles',
+                        'routeName' => 'admin.job-profiles',
+                        'url' => $this->routeIfExists('admin.job-profiles'),
+                    ],
+                    (object) [
+                        'title' => 'Applied Jobs',
+                        'routeName' => 'admin.job-applied-list',
+                        'url' => $this->routeIfExists('admin.job-applied-list'),
+                    ],
+                ],
+            ],
+            (object) [
                 'title' => 'Settings',
                 'icon' => 'ri-settings-3-line',
                 'routeName' => 'admin.settings',
