@@ -7,11 +7,9 @@ use Illuminate\Support\Facades\Route;
 
 class AdminSidebar
 {
-    protected mixed $user;
-
     public function __construct(mixed $user)
     {
-        $this->user = $user;
+        // Kept for API compatibility with existing sidebar calls.
     }
 
     public static function menu(mixed $user): self
@@ -33,20 +31,20 @@ class AdminSidebar
                 'submenu' => [],
             ],
             (object) [
-                'title' => 'Product Management',
+                'title' => 'Project Management',
                 'icon' => 'ri-shopping-bag-3-line',
                 'url' => '#',
                 'hasSubmenu' => true,
                 'submenu' => [
                     (object) [
-                        'title' => 'Project Categories',
-                        'routeName' => 'admin.project-categories',
-                        'url' => $this->routeIfExists('admin.project-categories'),
-                    ],
-                    (object) [
                         'title' => 'Projects',
                         'routeName' => 'admin.projects',
                         'url' => $this->routeIfExists('admin.projects'),
+                    ],
+                    (object) [
+                        'title' => 'Project Categories',
+                        'routeName' => 'admin.project-categories',
+                        'url' => $this->routeIfExists('admin.project-categories'),
                     ],
                     (object) [
                         'title' => 'Project Statuses',
@@ -61,62 +59,12 @@ class AdminSidebar
                 ],
             ],
             (object) [
-                'title' => 'Users',
-                'icon' => 'ri-user-line',
-                'routeName' => 'admin.users',
-                'url' => $this->routeIfExists('admin.users'),
-                'hasSubmenu' => false,
-                'submenu' => [],
-            ],
-            (object) [
-                'title' => 'Testimonials',
-                'icon' => 'ri-chat-3-line',
-                'routeName' => 'admin.testimonials',
-                'url' => $this->routeIfExists('admin.testimonials'),
-                'hasSubmenu' => false,
-                'submenu' => [],
-            ],
-            (object) [
-                'title' => 'Orders',
-                'icon' => 'ri-shopping-cart-2-line',
-                'routeName' => 'admin.orders',
-                'url' => $this->routeIfExists('admin.orders'),
-                'hasSubmenu' => false,
-                'submenu' => [],
-            ],
-            (object) [
-                'title' => 'Coupons',
-                'icon' => 'ri-coupon-3-line',
-                'routeName' => 'admin.coupons',
-                'url' => $this->routeIfExists('admin.coupons'),
-                'hasSubmenu' => false,
-                'submenu' => [],
-            ],
-            (object) [
                 'title' => 'Settings',
                 'icon' => 'ri-settings-3-line',
                 'routeName' => 'admin.settings',
                 'url' => $this->routeIfExists('admin.settings'),
                 'hasSubmenu' => false,
                 'submenu' => [],
-            ],
-            (object) [
-                'title' => 'Blog',
-                'icon' => 'ri-newspaper-line',
-                'url' => '#',
-                'hasSubmenu' => true,
-                'submenu' => [
-                    (object) [
-                        'title' => 'All Posts',
-                        'routeName' => 'admin.blogs',
-                        'url' => $this->routeIfExists('admin.blogs'),
-                    ],
-                    (object) [
-                        'title' => 'Categories',
-                        'routeName' => 'admin.blogs.categories',
-                        'url' => $this->routeIfExists('admin.blogs.categories'),
-                    ],
-                ],
             ],
         ])->map(function (object $item) use ($current): object {
             $item->key = str($item->title)->slug()->toString();
@@ -128,7 +76,7 @@ class AdminSidebar
                     $child->active = isset($child->routeName) && str($current)->is($child->routeName . '*');
 
                     return $child;
-                })->all();
+                })->filter(fn (object $child): bool => $child->url !== '#')->values()->all();
 
                 $item->active = collect($item->submenu)->contains(fn (object $child): bool => (bool) $child->active);
                 $item->open = $item->active;
@@ -139,7 +87,13 @@ class AdminSidebar
             $item->active = isset($item->routeName) && str($current)->is($item->routeName . '*');
 
             return $item;
-        });
+        })->filter(function (object $item): bool {
+            if ($item->hasSubmenu) {
+                return ! empty($item->submenu);
+            }
+
+            return $item->url !== '#';
+        })->values();
     }
 
     private function routeIfExists(string $name): string

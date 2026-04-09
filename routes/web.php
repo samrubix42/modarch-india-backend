@@ -33,6 +33,7 @@ Route::prefix('admin')
         Route::livewire('/project-categories', 'admin::project-category-list')->name('project-categories');
         Route::livewire('/project-statuses', 'admin::status')->name('project-statuses');
         Route::livewire('/project-tags', 'admin::tag')->name('project-tags');
+        Route::livewire('/settings', 'admin::setting')->name('settings');
     });
 
 
