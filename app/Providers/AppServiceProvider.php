@@ -32,5 +32,16 @@ class AppServiceProvider extends ServiceProvider
                     ], 429);
                 });
         });
+
+        RateLimiter::for('contact-submissions', function (Request $request) {
+            return Limit::perMinute(20)
+                ->by($request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Too many contact requests. Please try again later.',
+                    ], 429);
+                });
+        });
     }
 }

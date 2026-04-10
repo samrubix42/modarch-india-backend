@@ -36,6 +36,7 @@ Route::prefix('admin')
         Route::livewire('/project-tags', 'admin::tag')->name('project-tags');
         Route::livewire('/jobs/profiles', 'admin::job.job-profile-management')->name('job-profiles');
         Route::livewire('/jobs/applied', 'admin::job.job-applied-list')->name('job-applied-list');
+        Route::livewire('/contacts', 'admin::contact')->name('contacts');
         Route::get('/jobs/applied/{appliedJob}/download/{type}', [AppliedJobFileController::class, 'download'])
             ->where('type', 'resume|portfolio')
             ->name('applied-jobs.download');

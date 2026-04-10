@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\JobProfile;
 use App\Models\Project;
 use App\Models\ProjectCategory;
 use App\Models\Setting;
@@ -49,6 +50,29 @@ class PublicDataController extends Controller
         return response()->json([
             'success' => true,
             'data' => $setting,
+        ]);
+    }
+
+    public function jobProfiles(Request $request): JsonResponse
+    {
+        $profiles = JobProfile::query()
+            ->when(! $request->boolean('include_inactive'), fn ($query) => $query->where('is_active', true))
+            ->orderBy('sort_order')
+            ->orderBy('job_title')
+            ->get([
+                'id',
+                'job_title',
+                'job_description',
+                'is_active',
+                'sort_order',
+                'created_at',
+                'updated_at',
+            ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Job profiles fetched successfully.',
+            'data' => $profiles,
         ]);
     }
 
