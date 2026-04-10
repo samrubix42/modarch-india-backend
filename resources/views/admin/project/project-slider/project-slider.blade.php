@@ -16,7 +16,7 @@
 
         <button
             type="button"
-            @click="$dispatch('open-modal'); $wire.resetForm()"
+            @click="$dispatch('open-modal'); $wire.openCreateModal()"
             class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-800 sm:w-auto">
             <i class="ri-add-line text-base"></i>
             Add Slider Item
@@ -49,8 +49,15 @@
         <div class="hidden space-y-4 lg:block">
             @forelse ($sliderGroups as $group)
                 <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div class="border-b border-slate-200 bg-slate-50 px-5 py-3">
+                    <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
                         <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-700">{{ $group['title'] }}</h2>
+                        <button
+                            type="button"
+                            @click="$dispatch('open-modal'); $wire.openCreateModal({{ $group['category_id'] }})"
+                            class="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 transition hover:bg-emerald-200">
+                            <i class="ri-add-line"></i>
+                            Add in {{ $group['title'] }}
+                        </button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
@@ -64,7 +71,7 @@
                                 </tr>
                             </thead>
                             <tbody wire:sort="sortItem" class="divide-y divide-slate-100">
-                                @foreach ($group['items'] as $slider)
+                                @forelse ($group['items'] as $slider)
                                     <tr wire:key="slider-{{ $slider->id }}" wire:sort:item="{{ $slider->id }}" class="hover:bg-slate-50/80">
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-2">
@@ -102,7 +109,13 @@
                                             </div>
                                         </td>
                                     </tr>
-                                @endforeach
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-8 text-center text-xs text-slate-500">
+                                            No slider item in this category yet.
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -130,11 +143,18 @@
         <div class="space-y-4 lg:hidden">
             @forelse ($sliderGroups as $group)
                 <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div class="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                    <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
                         <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-700">{{ $group['title'] }}</h2>
+                        <button
+                            type="button"
+                            @click="$dispatch('open-modal'); $wire.openCreateModal({{ $group['category_id'] }})"
+                            class="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-1 text-[11px] font-medium text-emerald-800 transition hover:bg-emerald-200">
+                            <i class="ri-add-line"></i>
+                            Add
+                        </button>
                     </div>
                     <div wire:sort="sortItem" class="space-y-3 p-3">
-                        @foreach ($group['items'] as $slider)
+                        @forelse ($group['items'] as $slider)
                             <article wire:key="slider-mobile-{{ $slider->id }}" wire:sort:item="{{ $slider->id }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="flex items-center gap-2">
@@ -172,7 +192,11 @@
                                     <p class="text-slate-500">Order: <span class="inline-flex min-w-10 justify-center rounded-md bg-slate-100 px-2 py-1 font-medium text-slate-700">{{ $slider->sort_order }}</span></p>
                                 </div>
                             </article>
-                        @endforeach
+                        @empty
+                            <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-xs text-slate-500">
+                                No slider item in this category yet.
+                            </div>
+                        @endforelse
                     </div>
 
                     <div class="flex items-center justify-between border-t border-slate-100 px-4 py-3">
@@ -203,7 +227,7 @@
                     <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-900">{{ $sliderId ? 'Edit Slider Item' : 'Add Slider Item' }}</h3>
-                            <p class="text-xs text-slate-500">Select category, content type, and upload content.</p>
+                            <p class="text-xs text-slate-500">Add content to the selected category and set type-specific data.</p>
                         </div>
                         <button @click="modalOpen = false" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
                             <i class="ri-close-line text-lg"></i>
@@ -212,16 +236,27 @@
 
                     <div class="max-h-[75vh] space-y-5 overflow-y-auto px-6 py-5">
                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div>
-                                <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Category</label>
-                                <select wire:model.live="project_category_id" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
-                                    <option value="">Select Category</option>
-                                    @foreach ($this->categoryOptions() as $category)
-                                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                    @endforeach
-                                </select>
-                                @error('project_category_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
-                            </div>
+                            @if ($activeCategoryId)
+                                <div>
+                                    <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Category</label>
+                                    <div class="flex min-h-11 items-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+                                        {{ $this->categoryOptions()->firstWhere('id', $project_category_id)?->name ?? 'Selected Category' }}
+                                    </div>
+                                    <p class="mt-1 text-[11px] text-slate-500">Category is auto-selected from the table section.</p>
+                                    @error('project_category_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                                </div>
+                            @else
+                                <div>
+                                    <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Category</label>
+                                    <select wire:model.live="project_category_id" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
+                                        <option value="">Select Category</option>
+                                        @foreach ($this->categoryOptions() as $category)
+                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('project_category_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                                </div>
+                            @endif
 
                             <div>
                                 <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Type</label>

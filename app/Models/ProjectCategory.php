@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 
 class ProjectCategory extends Model
@@ -14,4 +15,10 @@ class ProjectCategory extends Model
         'sort_order',
         'is_active',
     ];
+
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_project_category')
+            ->withTimestamps();
+    }
 }

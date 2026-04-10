@@ -18,6 +18,10 @@ class ProjectSlider extends Model
         'sort_order',
     ];
 
+    protected $casts = [
+        'sort_order' => 'integer',
+    ];
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);

@@ -14,15 +14,18 @@ return new class extends Migration
     {
         Schema::create('project_sliders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_id')->constrained('projects')->onDelete('cascade');
-            $table->foreignId('project_category_id')->constrained('project_categories')->onDelete('cascade');
-            $table->enum('type', ContentType::values())->nullable();
+            $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
+            $table->foreignId('project_category_id')->constrained('project_categories')->cascadeOnDelete();
+            $table->enum('type', ContentType::values())->default(ContentType::IMAGE->value);
             $table->string('image')->nullable();
             $table->string('video')->nullable();
-            $table->string('description')->nullable();
-            $table->string('width')->nullable();
-            $table->integer('sort_order')->default(0);
+            $table->text('description')->nullable();
+            $table->string('width', 50)->default('100');
+            $table->unsignedInteger('sort_order')->default(1);
             $table->timestamps();
+
+            $table->index(['project_id', 'project_category_id', 'sort_order']);
+            $table->index(['project_id', 'type']);
         });
     }
 

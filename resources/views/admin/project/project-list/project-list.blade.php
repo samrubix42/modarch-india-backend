@@ -44,10 +44,11 @@
             <table class="min-w-full text-sm">
                 <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
                     <tr>
-                        <th class="px-6 py-4 text-left">Project</th>
-                        <th class="px-6 py-4 text-left">Media</th>
-                        <th class="px-6 py-4 text-left">Tag / Status</th>
-                        <th class="px-6 py-4 text-left">Slider</th>
+                        <th class="px-4 py-4 text-left">Sort</th>
+                        <th class="px-6 py-4 text-left">Thumbnail</th>
+                        <th class="px-6 py-4 text-left">Title</th>
+                        <th class="px-6 py-4 text-left">Main Image</th>
+                        <th class="px-6 py-4 text-left">Status</th>
                         <th class="px-6 py-4 text-left">Active</th>
                         <th class="px-6 py-4 text-right">Actions</th>
                     </tr>
@@ -55,44 +56,37 @@
                 <tbody wire:sort="sortItem" class="divide-y divide-slate-100">
                     @forelse ($projects as $project)
                         <tr wire:key="project-{{ $project->id }}" wire:sort:item="{{ $project->id }}" class="hover:bg-slate-50/80">
-                            <td class="px-6 py-4">
-                                <div class="flex items-start gap-2">
-                                    <button type="button" wire:sort:handle class="mt-0.5 cursor-grab rounded-md border border-slate-200 p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing" title="Drag to reorder">
-                                        <i class="ri-draggable"></i>
-                                    </button>
-                                    <div>
-                                        <p class="font-medium text-slate-900">{{ $project->project_name }}</p>
-                                        <p class="mt-0.5 text-xs text-slate-500">{{ $project->client_name }}</p>
-                                        <p class="mt-1 font-mono text-[11px] text-slate-400">{{ $project->slug }}</p>
-                                    </div>
-                                </div>
+                            <td class="px-4 py-4">
+                                <button type="button" wire:sort:handle class="cursor-grab rounded-md border border-slate-200 p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing" title="Drag to reorder">
+                                    <i class="ri-draggable"></i>
+                                </button>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    @if ($project->project_thumbnail)
-                                        <img src="{{ asset('storage/' . $project->project_thumbnail) }}" alt="{{ $project->project_name }} thumbnail" class="h-10 w-12 rounded-md object-cover ring-1 ring-slate-200">
-                                    @else
-                                        <div class="flex h-10 w-12 items-center justify-center rounded-md bg-slate-100 text-[10px] text-slate-400">No thumb</div>
-                                    @endif
-
-                                    @if ($project->project_main_image)
-                                        <img src="{{ asset('storage/' . $project->project_main_image) }}" alt="{{ $project->project_name }} image" class="h-10 w-12 rounded-md object-cover ring-1 ring-slate-200">
-                                    @else
-                                        <div class="flex h-10 w-12 items-center justify-center rounded-md bg-slate-100 text-[10px] text-slate-400">No main</div>
+                                @if ($project->project_thumbnail)
+                                    <img src="{{ asset('storage/' . $project->project_thumbnail) }}" alt="{{ $project->project_name }} thumbnail" class="h-14 w-20 rounded-lg object-cover ring-1 ring-slate-200">
+                                @else
+                                    <div class="flex h-14 w-20 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-[10px] text-slate-400">No image</div>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4">
+                                <div>
+                                    <p class="font-medium text-slate-900">{{ $project->project_name }}</p>
+                                    <p class="mt-0.5 text-xs text-slate-500">{{ $project->client_name }}</p>
+                                    <p class="mt-1 font-mono text-[11px] text-slate-400">{{ $project->slug }}</p>
+                                    @if ($project->categories->isNotEmpty())
+                                        <p class="mt-1 text-[11px] text-slate-500">{{ $project->categories->pluck('name')->join(', ') }}</p>
                                     @endif
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="space-y-1 text-xs">
-                                    <p class="text-slate-600"><span class="text-slate-400">Tag:</span> {{ $project->tag?->name ?? 'N/A' }}</p>
-                                    <p class="text-slate-600"><span class="text-slate-400">Status:</span> {{ $project->status?->name ?? 'N/A' }}</p>
-                                </div>
+                                @if ($project->project_main_image)
+                                    <img src="{{ asset('storage/' . $project->project_main_image) }}" alt="{{ $project->project_name }} main image" class="h-14 w-24 rounded-lg object-cover ring-1 ring-slate-200">
+                                @else
+                                    <div class="flex h-14 w-24 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-[10px] text-slate-400">No image</div>
+                                @endif
                             </td>
                             <td class="px-6 py-4">
-                                <a href="{{ route('admin.project-sliders', $project) }}" wire:navigate class="inline-flex items-center gap-1 rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100">
-                                    <i class="ri-slideshow-line"></i>
-                                    Open
-                                </a>
+                                <span class="inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-700">{{ $project->status?->name ?? 'N/A' }}</span>
                             </td>
                             <td class="px-6 py-4">
                                 <div x-data="{ switchOn: {{ $project->is_active ? 'true' : 'false' }} }" class="flex items-center space-x-2">
@@ -109,6 +103,9 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="inline-flex items-center gap-2">
+                                    <a href="{{ route('admin.project-sliders', $project) }}" wire:navigate class="rounded-md bg-blue-50 p-2 text-blue-700 transition hover:bg-blue-100" title="Open Slider">
+                                        <i class="ri-slideshow-line"></i>
+                                    </a>
                                     <button type="button" @click="$dispatch('open-modal'); $wire.openEditModal({{ $project->id }})" class="rounded-md bg-slate-100 p-2 text-slate-700 transition hover:bg-slate-200" title="Edit">
                                         <i class="ri-pencil-line"></i>
                                     </button>
@@ -120,7 +117,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-10 text-center text-sm text-slate-400">No projects found.</td>
+                            <td colspan="7" class="px-6 py-10 text-center text-sm text-slate-400">No projects found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -135,37 +132,44 @@
                             <p class="truncate font-medium text-slate-900">{{ $project->project_name }}</p>
                             <p class="mt-0.5 truncate text-xs text-slate-500">{{ $project->client_name }}</p>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div>
                             <button type="button" wire:sort:handle class="cursor-grab rounded-md border border-slate-200 p-1 text-slate-500 active:cursor-grabbing">
                                 <i class="ri-draggable text-[13px]"></i>
                             </button>
-                            <a href="{{ route('admin.project-sliders', $project) }}" wire:navigate class="rounded-md bg-blue-50 p-1.5 text-blue-700">
-                                <i class="ri-slideshow-line"></i>
-                            </a>
                         </div>
                     </div>
 
-                    <div class="mt-3 grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                            <p class="text-slate-400">Tag</p>
-                            <p class="mt-1 text-slate-700">{{ $project->tag?->name ?? 'N/A' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-400">Status</p>
-                            <p class="mt-1 text-slate-700">{{ $project->status?->name ?? 'N/A' }}</p>
-                        </div>
+                    <div class="mt-3 text-xs">
+                        <p class="text-slate-400">Status</p>
+                        <p class="mt-1 text-slate-700">{{ $project->status?->name ?? 'N/A' }}</p>
                     </div>
 
                     <div class="mt-3 flex items-center gap-2">
-                        @if ($project->project_thumbnail)
-                            <img src="{{ asset('storage/' . $project->project_thumbnail) }}" alt="{{ $project->project_name }} thumbnail" class="h-14 w-16 rounded-md object-cover ring-1 ring-slate-200">
-                        @endif
-                        @if ($project->project_main_image)
-                            <img src="{{ asset('storage/' . $project->project_main_image) }}" alt="{{ $project->project_name }} image" class="h-14 w-16 rounded-md object-cover ring-1 ring-slate-200">
-                        @endif
-                        @if (! $project->project_thumbnail && ! $project->project_main_image)
-                            <div class="rounded-md bg-slate-100 px-3 py-2 text-[11px] text-slate-500">No media uploaded</div>
-                        @endif
+                        <div>
+                            <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Thumb</p>
+                            @if ($project->project_thumbnail)
+                                <img src="{{ asset('storage/' . $project->project_thumbnail) }}" alt="{{ $project->project_name }} thumbnail" class="h-14 w-16 rounded-md object-cover ring-1 ring-slate-200">
+                            @else
+                                <div class="flex h-14 w-16 items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 text-[10px] text-slate-400">No image</div>
+                            @endif
+                        </div>
+
+                        <div class="mx-auto">
+                            <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Main</p>
+                            @if ($project->project_main_image)
+                                <img src="{{ asset('storage/' . $project->project_main_image) }}" alt="{{ $project->project_name }} image" class="h-14 w-20 rounded-md object-cover ring-1 ring-slate-200">
+                            @else
+                                <div class="flex h-14 w-20 items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 text-[10px] text-slate-400">No image</div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="mt-3 flex flex-wrap gap-1">
+                        @forelse ($project->categories as $category)
+                            <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700">{{ $category->name }}</span>
+                        @empty
+                            <span class="text-[11px] text-slate-400">No category selected</span>
+                        @endforelse
                     </div>
 
                     <div class="mt-3 flex items-center justify-between">
@@ -182,6 +186,9 @@
                         </div>
 
                         <div class="inline-flex items-center gap-2">
+                            <a href="{{ route('admin.project-sliders', $project) }}" wire:navigate class="rounded-md bg-blue-50 p-2 text-blue-700" title="Open Slider">
+                                <i class="ri-slideshow-line"></i>
+                            </a>
                             <button type="button" @click="$dispatch('open-modal'); $wire.openEditModal({{ $project->id }})" class="rounded-md bg-slate-100 p-2 text-slate-700">
                                 <i class="ri-pencil-line"></i>
                             </button>
@@ -281,32 +288,56 @@
                                 </select>
                                 @error('project_status_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                             </div>
+
+                            <div class="sm:col-span-2">
+                                <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Project Categories</label>
+                                <div class="rounded-xl border border-slate-300 bg-slate-50 p-3">
+                                    <div class="flex flex-wrap gap-2">
+                                        @forelse ($this->categoryOptions() as $category)
+                                            <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50">
+                                                <input type="checkbox" value="{{ $category->id }}" wire:model.live="selected_category_ids" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                                {{ $category->name }}
+                                            </label>
+                                        @empty
+                                            <p class="text-xs text-slate-500">No active categories found.</p>
+                                        @endforelse
+                                    </div>
+                                </div>
+                                @error('selected_category_ids') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                                @error('selected_category_ids.*') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Thumbnail Image</label>
-                                <input type="file" wire:model="project_thumbnail" accept="image/*" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-200">
+                                <div class="rounded-xl border border-slate-300 bg-white p-3">
+                                    <input type="file" wire:model="project_thumbnail" accept="image/*" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-emerald-800 hover:file:bg-emerald-200">
+                                    <p class="mt-2 text-[11px] text-slate-500">Recommended ratio: 4:3 for list cards.</p>
+                                </div>
                                 <p wire:loading wire:target="project_thumbnail" class="mt-1 text-xs text-emerald-700">Uploading thumbnail...</p>
                                 @error('project_thumbnail') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
 
                                 @if ($project_thumbnail)
-                                    <img src="{{ $project_thumbnail->temporaryUrl() }}" alt="Thumbnail preview" class="mt-2 h-20 w-28 rounded-md object-cover ring-1 ring-slate-200">
+                                    <img src="{{ $project_thumbnail->temporaryUrl() }}" alt="Thumbnail preview" class="mt-2 h-24 w-36 rounded-lg object-cover ring-1 ring-slate-200">
                                 @elseif ($existing_thumbnail)
-                                    <img src="{{ asset('storage/' . $existing_thumbnail) }}" alt="Current thumbnail" class="mt-2 h-20 w-28 rounded-md object-cover ring-1 ring-slate-200">
+                                    <img src="{{ asset('storage/' . $existing_thumbnail) }}" alt="Current thumbnail" class="mt-2 h-24 w-36 rounded-lg object-cover ring-1 ring-slate-200">
                                 @endif
                             </div>
 
                             <div>
                                 <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Main Image</label>
-                                <input type="file" wire:model="project_main_image" accept="image/*" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-200">
+                                <div class="rounded-xl border border-slate-300 bg-white p-3">
+                                    <input type="file" wire:model="project_main_image" accept="image/*" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-sky-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-sky-800 hover:file:bg-sky-200">
+                                    <p class="mt-2 text-[11px] text-slate-500">Recommended ratio: 16:9 for detail hero.</p>
+                                </div>
                                 <p wire:loading wire:target="project_main_image" class="mt-1 text-xs text-emerald-700">Uploading main image...</p>
                                 @error('project_main_image') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
 
                                 @if ($project_main_image)
-                                    <img src="{{ $project_main_image->temporaryUrl() }}" alt="Main image preview" class="mt-2 h-20 w-28 rounded-md object-cover ring-1 ring-slate-200">
+                                    <img src="{{ $project_main_image->temporaryUrl() }}" alt="Main image preview" class="mt-2 h-24 w-36 rounded-lg object-cover ring-1 ring-slate-200">
                                 @elseif ($existing_main_image)
-                                    <img src="{{ asset('storage/' . $existing_main_image) }}" alt="Current main image" class="mt-2 h-20 w-28 rounded-md object-cover ring-1 ring-slate-200">
+                                    <img src="{{ asset('storage/' . $existing_main_image) }}" alt="Current main image" class="mt-2 h-24 w-36 rounded-lg object-cover ring-1 ring-slate-200">
                                 @endif
                             </div>
                         </div>

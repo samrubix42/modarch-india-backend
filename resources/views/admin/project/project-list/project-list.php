@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Project;
+use App\Models\ProjectCategory;
 use App\Models\ProjectStatus;
 use App\Models\ProjectTag;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -21,6 +22,7 @@ new #[Layout('layouts::app')] class extends Component {
     public ?int $deleteId = null;
 
     public ?int $tag_id = null;
+    public array $selected_category_ids = [];
     public ?int $project_status_id = null;
     public string $client_name = '';
     public string $project_name = '';
@@ -64,6 +66,7 @@ new #[Layout('layouts::app')] class extends Component {
         $this->resetValidation();
         $this->projectId = null;
         $this->tag_id = null;
+        $this->selected_category_ids = [];
         $this->project_status_id = null;
         $this->client_name = '';
         $this->project_name = '';
@@ -86,6 +89,7 @@ new #[Layout('layouts::app')] class extends Component {
         $this->resetValidation();
         $this->projectId = $project->id;
         $this->tag_id = $project->tag_id;
+        $this->selected_category_ids = $project->categories()->pluck('project_categories.id')->map(fn ($id) => (int) $id)->all();
         $this->project_status_id = $project->project_status_id;
         $this->client_name = $project->client_name;
         $this->project_name = $project->project_name;
@@ -110,6 +114,8 @@ new #[Layout('layouts::app')] class extends Component {
     {
         $validated = $this->validate([
             'tag_id' => ['nullable', 'exists:project_tags,id'],
+            'selected_category_ids' => ['nullable', 'array'],
+            'selected_category_ids.*' => ['integer', 'exists:project_categories,id'],
             'project_status_id' => ['nullable', 'exists:project_statuses,id'],
             'client_name' => ['required', 'string', 'max:255'],
             'project_name' => ['required', 'string', 'max:255'],
@@ -155,6 +161,7 @@ new #[Layout('layouts::app')] class extends Component {
         ]);
 
         $project->save();
+        $project->categories()->sync($validated['selected_category_ids'] ?? []);
 
         $this->dispatch('toast-show', [
             'message' => $this->projectId ? 'Project updated successfully!' : 'Project created successfully!',
@@ -274,7 +281,7 @@ new #[Layout('layouts::app')] class extends Component {
     public function projectsPaginator(): LengthAwarePaginator
     {
         return Project::query()
-            ->with(['tag', 'status'])
+            ->with(['tag', 'status', 'categories'])
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($nested) {
                     $nested->where('project_name', 'like', '%' . $this->search . '%')
@@ -294,5 +301,10 @@ new #[Layout('layouts::app')] class extends Component {
     public function statusOptions()
     {
         return ProjectStatus::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
+    }
+
+    public function categoryOptions()
+    {
+        return ProjectCategory::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
     }
 };
