@@ -56,6 +56,7 @@ class AdminSidebar
                         'routeName' => 'admin.project-tags',
                         'url' => $this->routeIfExists('admin.project-tags'),
                     ],
+                 
                 ],
             ],
             (object) [
@@ -81,6 +82,14 @@ class AdminSidebar
                 'icon' => 'ri-settings-3-line',
                 'routeName' => 'admin.settings',
                 'url' => $this->routeIfExists('admin.settings'),
+                'hasSubmenu' => false,
+                'submenu' => [],
+            ],
+            (object) [
+                'title' => 'Contacts',
+                'icon' => 'ri-contacts-line',
+                'routeName' => 'admin.contacts',
+                'url' => $this->routeIfExists('admin.contacts'),
                 'hasSubmenu' => false,
                 'submenu' => [],
             ],
