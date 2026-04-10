@@ -1,5 +1,5 @@
 
-@php($sliderGroups = $this->sliderGroups())
+@php($sliders = $this->slidersPaginator())
 
 <div class="mx-auto max-w-7xl space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-6 lg:px-8">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -45,94 +45,105 @@
         </div>
     </div>
 
-    <div class="space-y-4">
-        <div class="hidden space-y-4 lg:block">
-            @forelse ($sliderGroups as $group)
-                <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3">
-                        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-700">{{ $group['title'] }}</h2>
-                        <button
-                            type="button"
-                            @click="$dispatch('open-modal'); $wire.openCreateModal({{ $group['category_id'] }})"
-                            class="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 transition hover:bg-emerald-200">
-                            <i class="ri-add-line"></i>
-                            Add in {{ $group['title'] }}
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-sm">
-                            <thead class="bg-white text-xs uppercase tracking-wider text-slate-500">
-                                <tr>
-                                    <th class="px-6 py-4 text-left">Type</th>
-                                    <th class="px-6 py-4 text-left">Content</th>
-                                    <th class="px-6 py-4 text-left">Width</th>
-                                    <th class="px-6 py-4 text-left">Order</th>
-                                    <th class="px-6 py-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody wire:sort="sortItem" class="divide-y divide-slate-100">
-                                @forelse ($group['items'] as $slider)
-                                    <tr wire:key="slider-{{ $slider->id }}" wire:sort:item="{{ $slider->id }}" class="hover:bg-slate-50/80">
-                                        <td class="px-6 py-4">
-                                            <div class="flex items-center gap-2">
-                                                <button type="button" wire:sort:handle class="cursor-grab rounded-md border border-slate-200 p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing" title="Drag to reorder in this category">
-                                                    <i class="ri-draggable"></i>
-                                                </button>
-                                                <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize {{ $slider->type === 'image' ? 'bg-emerald-100 text-emerald-700' : ($slider->type === 'video' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700') }}">{{ $slider->type }}</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            @if ($slider->type === 'image' && $slider->image)
-                                                <img src="{{ asset('storage/' . $slider->image) }}" alt="Slider image" class="h-12 w-20 rounded-md object-cover ring-1 ring-slate-200">
-                                            @elseif ($slider->type === 'video' && $slider->video)
-                                                <video class="h-12 w-20 rounded-md object-cover ring-1 ring-slate-200" muted>
-                                                    <source src="{{ asset('storage/' . $slider->video) }}">
-                                                </video>
-                                            @elseif ($slider->type === 'description')
-                                                <p class="line-clamp-2 max-w-xs text-xs text-slate-600">{{ $slider->description }}</p>
-                                            @else
-                                                <p class="text-xs text-slate-400">No content</p>
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-4 text-slate-600">{{ $slider->width ?: '100' }}</td>
-                                        <td class="px-6 py-4">
-                                            <span class="inline-flex min-w-10 justify-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">{{ $slider->sort_order }}</span>
-                                        </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <div class="inline-flex items-center gap-2">
-                                                <button type="button" @click="$dispatch('open-modal'); $wire.openEditModal({{ $slider->id }})" class="rounded-md bg-slate-100 p-2 text-slate-700 transition hover:bg-slate-200" title="Edit">
-                                                    <i class="ri-pencil-line"></i>
-                                                </button>
-                                                <button type="button" @click="$dispatch('open-delete-modal'); $wire.confirmDelete({{ $slider->id }})" class="rounded-md bg-rose-50 p-2 text-rose-700 transition hover:bg-rose-100" title="Delete">
-                                                    <i class="ri-delete-bin-line"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="px-6 py-8 text-center text-xs text-slate-500">
-                                            No slider item in this category yet.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="hidden overflow-x-auto lg:block">
+            <table class="min-w-full text-sm">
+                <thead class="bg-white text-xs uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="px-6 py-4 text-left">Type</th>
+                        <th class="px-6 py-4 text-left">Content</th>
+                        <th class="px-6 py-4 text-left">Width</th>
+                        <th class="px-6 py-4 text-left">Order</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody wire:sort="sortItem" class="divide-y divide-slate-100">
+                    @forelse ($sliders as $slider)
+                        <tr wire:key="slider-{{ $slider->id }}" wire:sort:item="{{ $slider->id }}" class="hover:bg-slate-50/80">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-2">
+                                    <button type="button" wire:sort:handle class="cursor-grab rounded-md border border-slate-200 p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing" title="Drag to reorder">
+                                        <i class="ri-draggable"></i>
+                                    </button>
+                                    <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize {{ $slider->type === 'image' ? 'bg-emerald-100 text-emerald-700' : ($slider->type === 'video' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700') }}">{{ $slider->type }}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                @if ($slider->type === 'image' && $slider->image)
+                                    <img src="{{ asset('storage/' . $slider->image) }}" alt="Slider image" class="h-12 w-20 rounded-md object-cover ring-1 ring-slate-200">
+                                @elseif ($slider->type === 'video' && $slider->video)
+                                    <video class="h-12 w-20 rounded-md object-cover ring-1 ring-slate-200" muted>
+                                        <source src="{{ asset('storage/' . $slider->video) }}">
+                                    </video>
+                                @elseif ($slider->type === 'description')
+                                    <p class="line-clamp-2 max-w-xs text-xs text-slate-600">{{ $slider->description }}</p>
+                                @else
+                                    <p class="text-xs text-slate-400">No content</p>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-slate-600">{{ $slider->width ?: '100' }}</td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex min-w-10 justify-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">{{ $slider->sort_order }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="inline-flex items-center gap-2">
+                                    <button type="button" @click="$dispatch('open-modal'); $wire.openEditModal({{ $slider->id }})" class="rounded-md bg-slate-100 p-2 text-slate-700 transition hover:bg-slate-200" title="Edit">
+                                        <i class="ri-pencil-line"></i>
+                                    </button>
+                                    <button type="button" @click="$dispatch('open-delete-modal'); $wire.confirmDelete({{ $slider->id }})" class="rounded-md bg-rose-50 p-2 text-rose-700 transition hover:bg-rose-100" title="Delete">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-6 py-8 text-center text-xs text-slate-500">No slider items found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div wire:sort="sortItem" class="space-y-3 p-3 lg:hidden">
+            @forelse ($sliders as $slider)
+                <article wire:key="slider-mobile-{{ $slider->id }}" wire:sort:item="{{ $slider->id }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <button type="button" wire:sort:handle class="cursor-grab rounded-md border border-slate-200 p-1 text-slate-500 active:cursor-grabbing">
+                                <i class="ri-draggable text-[13px]"></i>
+                            </button>
+                            <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize {{ $slider->type === 'image' ? 'bg-emerald-100 text-emerald-700' : ($slider->type === 'video' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700') }}">{{ $slider->type }}</span>
+                        </div>
+                        <div class="inline-flex items-center gap-2">
+                            <button type="button" @click="$dispatch('open-modal'); $wire.openEditModal({{ $slider->id }})" class="rounded-md bg-slate-100 p-1.5 text-slate-700">
+                                <i class="ri-pencil-line"></i>
+                            </button>
+                            <button type="button" @click="$dispatch('open-delete-modal'); $wire.confirmDelete({{ $slider->id }})" class="rounded-md bg-rose-50 p-1.5 text-rose-700">
+                                <i class="ri-delete-bin-line"></i>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-                        <p class="text-xs text-slate-500">Showing {{ $group['items']->count() }} of {{ $group['total'] }} in {{ $group['title'] }}</p>
-                        @if ($group['lastPage'] > 1)
-                            <div class="flex items-center gap-1">
-                                <button type="button" wire:click="previousCategoryPage({{ $group['category_id'] }})" @disabled($group['currentPage'] <= 1) class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Prev</button>
-                                @for ($i = 1; $i <= $group['lastPage']; $i++)
-                                    <button type="button" wire:click="gotoCategoryPage({{ $group['category_id'] }}, {{ $i }})" class="rounded-md px-2 py-1 text-xs {{ $group['currentPage'] === $i ? 'bg-emerald-700 text-white' : 'border border-slate-300 text-slate-600 hover:bg-slate-50' }}">{{ $i }}</button>
-                                @endfor
-                                <button type="button" wire:click="nextCategoryPage({{ $group['category_id'] }})" @disabled($group['currentPage'] >= $group['lastPage']) class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
-                            </div>
+                    <div class="mt-3">
+                        @if ($slider->type === 'image' && $slider->image)
+                            <img src="{{ asset('storage/' . $slider->image) }}" alt="Slider image" class="h-20 w-full rounded-md object-cover ring-1 ring-slate-200">
+                        @elseif ($slider->type === 'video' && $slider->video)
+                            <video controls class="h-32 w-full rounded-md object-cover ring-1 ring-slate-200">
+                                <source src="{{ asset('storage/' . $slider->video) }}">
+                            </video>
+                        @elseif ($slider->type === 'description')
+                            <p class="rounded-md bg-slate-50 p-3 text-sm text-slate-600">{{ $slider->description }}</p>
+                        @else
+                            <p class="text-xs text-slate-400">No content</p>
                         @endif
                     </div>
-                </section>
+
+                    <div class="mt-3 flex items-center justify-between text-xs">
+                        <p class="text-slate-500">Width: <span class="font-medium text-slate-700">{{ $slider->width ?: '100' }}</span></p>
+                        <p class="text-slate-500">Order: <span class="inline-flex min-w-10 justify-center rounded-md bg-slate-100 px-2 py-1 font-medium text-slate-700">{{ $slider->sort_order }}</span></p>
+                    </div>
+                </article>
             @empty
                 <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 py-10 text-center text-sm text-slate-400">
                     No slider items found.
@@ -140,81 +151,18 @@
             @endforelse
         </div>
 
-        <div class="space-y-4 lg:hidden">
-            @forelse ($sliderGroups as $group)
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
-                        <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-700">{{ $group['title'] }}</h2>
-                        <button
-                            type="button"
-                            @click="$dispatch('open-modal'); $wire.openCreateModal({{ $group['category_id'] }})"
-                            class="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-1 text-[11px] font-medium text-emerald-800 transition hover:bg-emerald-200">
-                            <i class="ri-add-line"></i>
-                            Add
-                        </button>
-                    </div>
-                    <div wire:sort="sortItem" class="space-y-3 p-3">
-                        @forelse ($group['items'] as $slider)
-                            <article wire:key="slider-mobile-{{ $slider->id }}" wire:sort:item="{{ $slider->id }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="flex items-center gap-2">
-                                        <button type="button" wire:sort:handle class="cursor-grab rounded-md border border-slate-200 p-1 text-slate-500 active:cursor-grabbing">
-                                            <i class="ri-draggable text-[13px]"></i>
-                                        </button>
-                                        <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize {{ $slider->type === 'image' ? 'bg-emerald-100 text-emerald-700' : ($slider->type === 'video' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700') }}">{{ $slider->type }}</span>
-                                    </div>
-                                    <div class="inline-flex items-center gap-2">
-                                        <button type="button" @click="$dispatch('open-modal'); $wire.openEditModal({{ $slider->id }})" class="rounded-md bg-slate-100 p-1.5 text-slate-700">
-                                            <i class="ri-pencil-line"></i>
-                                        </button>
-                                        <button type="button" @click="$dispatch('open-delete-modal'); $wire.confirmDelete({{ $slider->id }})" class="rounded-md bg-rose-50 p-1.5 text-rose-700">
-                                            <i class="ri-delete-bin-line"></i>
-                                        </button>
-                                    </div>
-                                </div>
+        <div class="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p class="text-xs text-slate-500">Showing {{ $sliders->count() }} of {{ $sliders->total() }} slider items</p>
 
-                                <div class="mt-3">
-                                    @if ($slider->type === 'image' && $slider->image)
-                                        <img src="{{ asset('storage/' . $slider->image) }}" alt="Slider image" class="h-20 w-full rounded-md object-cover ring-1 ring-slate-200">
-                                    @elseif ($slider->type === 'video' && $slider->video)
-                                        <video controls class="h-32 w-full rounded-md object-cover ring-1 ring-slate-200">
-                                            <source src="{{ asset('storage/' . $slider->video) }}">
-                                        </video>
-                                    @elseif ($slider->type === 'description')
-                                        <p class="rounded-md bg-slate-50 p-3 text-sm text-slate-600">{{ $slider->description }}</p>
-                                    @else
-                                        <p class="text-xs text-slate-400">No content</p>
-                                    @endif
-                                </div>
-
-                                <div class="mt-3 flex items-center justify-between text-xs">
-                                    <p class="text-slate-500">Width: <span class="font-medium text-slate-700">{{ $slider->width ?: '100' }}</span></p>
-                                    <p class="text-slate-500">Order: <span class="inline-flex min-w-10 justify-center rounded-md bg-slate-100 px-2 py-1 font-medium text-slate-700">{{ $slider->sort_order }}</span></p>
-                                </div>
-                            </article>
-                        @empty
-                            <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-xs text-slate-500">
-                                No slider item in this category yet.
-                            </div>
-                        @endforelse
-                    </div>
-
-                    <div class="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                        <p class="text-xs text-slate-500">{{ $group['items']->count() }}/{{ $group['total'] }}</p>
-                        @if ($group['lastPage'] > 1)
-                            <div class="flex items-center gap-1">
-                                <button type="button" wire:click="previousCategoryPage({{ $group['category_id'] }})" @disabled($group['currentPage'] <= 1) class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Prev</button>
-                                <button type="button" class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600">{{ $group['currentPage'] }}/{{ $group['lastPage'] }}</button>
-                                <button type="button" wire:click="nextCategoryPage({{ $group['category_id'] }})" @disabled($group['currentPage'] >= $group['lastPage']) class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
-                            </div>
-                        @endif
-                    </div>
-                </section>
-            @empty
-                <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 py-10 text-center text-sm text-slate-400">
-                    No slider items found.
+            @if ($sliders->lastPage() > 1)
+                <div class="flex items-center gap-1">
+                    <button type="button" wire:click="previousPage" @disabled($page <= 1) class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Prev</button>
+                    @for ($i = 1; $i <= $sliders->lastPage(); $i++)
+                        <button type="button" wire:click="gotoPage({{ $i }})" class="rounded-md px-2 py-1 text-xs {{ $page === $i ? 'bg-emerald-700 text-white' : 'border border-slate-300 text-slate-600 hover:bg-slate-50' }}">{{ $i }}</button>
+                    @endfor
+                    <button type="button" wire:click="nextPage" @disabled($page >= $sliders->lastPage()) class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
                 </div>
-            @endforelse
+            @endif
         </div>
     </div>
 
@@ -227,7 +175,7 @@
                     <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-900">{{ $sliderId ? 'Edit Slider Item' : 'Add Slider Item' }}</h3>
-                            <p class="text-xs text-slate-500">Add content to the selected category and set type-specific data.</p>
+                            <p class="text-xs text-slate-500">Add project slider content and set type-specific data.</p>
                         </div>
                         <button @click="modalOpen = false" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
                             <i class="ri-close-line text-lg"></i>
@@ -236,28 +184,6 @@
 
                     <div class="max-h-[75vh] space-y-5 overflow-y-auto px-6 py-5">
                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            @if ($activeCategoryId)
-                                <div>
-                                    <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Category</label>
-                                    <div class="flex min-h-11 items-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
-                                        {{ $this->categoryOptions()->firstWhere('id', $project_category_id)?->name ?? 'Selected Category' }}
-                                    </div>
-                                    <p class="mt-1 text-[11px] text-slate-500">Category is auto-selected from the table section.</p>
-                                    @error('project_category_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
-                                </div>
-                            @else
-                                <div>
-                                    <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Category</label>
-                                    <select wire:model.live="project_category_id" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
-                                        <option value="">Select Category</option>
-                                        @foreach ($this->categoryOptions() as $category)
-                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('project_category_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
-                                </div>
-                            @endif
-
                             <div>
                                 <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Type</label>
                                 <select wire:model.live="type" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
@@ -276,7 +202,7 @@
 
                             <div>
                                 <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Sort Order</label>
-                                <input type="number" min="0" wire:model.live="sort_order" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
+                                <input type="number" min="1" wire:model.live="sort_order" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
                                 @error('sort_order') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                             </div>
                         </div>

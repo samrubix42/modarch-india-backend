@@ -9,7 +9,6 @@ class ProjectSlider extends Model
 {
     protected $fillable = [
         'project_id',
-        'project_category_id',
         'type',
         'image',
         'video',
@@ -25,10 +24,5 @@ class ProjectSlider extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(ProjectCategory::class, 'project_category_id');
     }
 }

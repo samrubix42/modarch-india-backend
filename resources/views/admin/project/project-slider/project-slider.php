@@ -2,10 +2,9 @@
 
 use App\Enums\ContentType;
 use App\Models\Project;
-use App\Models\ProjectCategory;
 use App\Models\ProjectSlider;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -18,13 +17,10 @@ new #[Layout('layouts::app')] class extends Component {
 
     public string $search = '';
     public int $perPage = 10;
-    public array $categoryPages = [];
+    public int $page = 1;
 
     public ?int $sliderId = null;
     public ?int $deleteId = null;
-    public ?int $activeCategoryId = null;
-
-    public ?int $project_category_id = null;
     public string $type = 'image';
     public array $image_files = [];
     public $video_file = null;
@@ -44,14 +40,14 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function updatedSearch(): void
     {
-        $this->categoryPages = [];
+        $this->page = 1;
     }
 
     public function updatedPerPage($value): void
     {
         $allowed = [10, 25, 50];
         $this->perPage = in_array((int) $value, $allowed, true) ? (int) $value : 10;
-        $this->categoryPages = [];
+        $this->page = 1;
     }
 
     public function updatedType(): void
@@ -69,34 +65,21 @@ new #[Layout('layouts::app')] class extends Component {
         }
     }
 
-    public function updatedProjectCategoryId($value): void
+    public function openCreateModal(): void
     {
-        if ($this->sliderId !== null || blank($value)) {
-            return;
-        }
-
-        $this->sort_order = $this->nextSortOrderForCategory((int) $value);
+        $this->resetForm();
     }
 
-    public function openCreateModal(?int $categoryId = null): void
-    {
-        $this->resetForm($categoryId);
-    }
-
-    public function resetForm(?int $categoryId = null): void
+    public function resetForm(): void
     {
         $this->resetValidation();
         $this->sliderId = null;
-        $this->activeCategoryId = $categoryId;
-        $this->project_category_id = $categoryId;
         $this->type = ContentType::IMAGE->value;
         $this->image_files = [];
         $this->video_file = null;
         $this->description = null;
         $this->width = '100';
-        $this->sort_order = $categoryId
-            ? $this->nextSortOrderForCategory($categoryId)
-            : (int) (ProjectSlider::where('project_id', $this->projectId)->max('sort_order') ?? 0) + 1;
+        $this->sort_order = $this->nextSortOrder();
         $this->existing_image = null;
         $this->existing_video = null;
         $this->deleteId = null;
@@ -108,8 +91,6 @@ new #[Layout('layouts::app')] class extends Component {
 
         $this->resetValidation();
         $this->sliderId = $slider->id;
-        $this->activeCategoryId = null;
-        $this->project_category_id = $slider->project_category_id;
         $this->type = $slider->type ?? ContentType::IMAGE->value;
         $this->description = $slider->description;
         $this->width = $slider->width ?: '100';
@@ -138,19 +119,13 @@ new #[Layout('layouts::app')] class extends Component {
     public function save(): void
     {
         $validated = $this->validate([
-            'project_category_id' => [
-                'required',
-                'integer',
-                Rule::exists('project_project_category', 'project_category_id')
-                    ->where(fn ($query) => $query->where('project_id', $this->projectId)),
-            ],
             'type' => ['required', 'in:' . implode(',', ContentType::values())],
             'image_files' => ['nullable', 'array'],
             'image_files.*' => ['image', 'max:6144'],
             'video_file' => ['nullable', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm', 'max:51200'],
             'description' => ['nullable', 'string'],
             'width' => ['nullable', 'string', 'max:50'],
-            'sort_order' => ['required', 'integer', 'min:0'],
+            'sort_order' => ['required', 'integer', 'min:1'],
         ]);
 
         if (
@@ -175,7 +150,7 @@ new #[Layout('layouts::app')] class extends Component {
         if ($validated['type'] === ContentType::IMAGE->value && ! $this->sliderId && count($this->image_files) > 1) {
             $baseSortOrder = max(
                 (int) $validated['sort_order'],
-                $this->nextSortOrderForCategory((int) $validated['project_category_id'])
+                $this->nextSortOrder()
             );
 
             foreach (array_values($this->image_files) as $index => $imageFile) {
@@ -183,7 +158,6 @@ new #[Layout('layouts::app')] class extends Component {
 
                 ProjectSlider::create([
                     'project_id' => $this->projectId,
-                    'project_category_id' => $validated['project_category_id'],
                     'type' => ContentType::IMAGE->value,
                     'image' => $imagePath,
                     'video' => null,
@@ -227,7 +201,6 @@ new #[Layout('layouts::app')] class extends Component {
 
         $slider->fill([
             'project_id' => $this->projectId,
-            'project_category_id' => $validated['project_category_id'],
             'type' => $validated['type'],
             'image' => $validated['type'] === ContentType::IMAGE->value ? $imagePath : null,
             'video' => $validated['type'] === ContentType::VIDEO->value ? $videoPath : null,
@@ -235,7 +208,7 @@ new #[Layout('layouts::app')] class extends Component {
             'width' => $validated['width'] ?: '100',
             'sort_order' => $this->sliderId
                 ? (int) $validated['sort_order']
-                : max((int) $validated['sort_order'], $this->nextSortOrderForCategory((int) $validated['project_category_id'])),
+                : max((int) $validated['sort_order'], $this->nextSortOrder()),
         ]);
 
         $slider->save();
@@ -305,7 +278,6 @@ new #[Layout('layouts::app')] class extends Component {
 
         $orderedIds = ProjectSlider::query()
             ->where('project_id', $this->projectId)
-            ->where('project_category_id', $item->project_category_id)
             ->orderBy('sort_order')
             ->orderBy('id')
             ->pluck('id')
@@ -329,38 +301,35 @@ new #[Layout('layouts::app')] class extends Component {
         }
 
         $this->dispatch('toast-show', [
-            'message' => 'Slider order updated for this category!',
+            'message' => 'Slider order updated successfully!',
             'type' => 'success',
             'position' => 'top-right',
         ]);
     }
 
-    public function previousCategoryPage(int $categoryId): void
+    public function previousPage(): void
     {
-        $key = (string) $categoryId;
-        $current = (int) ($this->categoryPages[$key] ?? 1);
-        $this->categoryPages[$key] = max(1, $current - 1);
+        if ($this->page > 1) {
+            $this->page--;
+        }
     }
 
-    public function nextCategoryPage(int $categoryId): void
+    public function nextPage(): void
     {
-        $key = (string) $categoryId;
-        $current = (int) ($this->categoryPages[$key] ?? 1);
-        $last = $this->categoryLastPage($categoryId);
-        $this->categoryPages[$key] = min($last, $current + 1);
+        if ($this->page < $this->slidersPaginator()->lastPage()) {
+            $this->page++;
+        }
     }
 
-    public function gotoCategoryPage(int $categoryId, int $page): void
+    public function gotoPage(int $page): void
     {
-        $key = (string) $categoryId;
-        $last = $this->categoryLastPage($categoryId);
-        $this->categoryPages[$key] = min(max(1, $page), $last);
+        $last = $this->slidersPaginator()->lastPage();
+        $this->page = min(max(1, $page), max(1, $last));
     }
 
-    public function sliderGroups(): array
+    public function slidersPaginator(): LengthAwarePaginator
     {
-        $sliders = ProjectSlider::query()
-            ->with('category')
+        return ProjectSlider::query()
             ->where('project_id', $this->projectId)
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($nested) {
@@ -368,108 +337,20 @@ new #[Layout('layouts::app')] class extends Component {
                         ->orWhere('description', 'like', '%' . $this->search . '%');
                 });
             })
-            ->orderBy('project_category_id')
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get();
-
-        $grouped = $sliders->groupBy(fn ($item) => (int) ($item->project_category_id ?? 0));
-        $categoryMap = $this->categoryOptions()->keyBy('id');
-
-        $groups = [];
-
-        foreach ($categoryMap as $categoryId => $category) {
-            $items = $grouped->get((int) $categoryId, collect());
-            $key = (string) $categoryId;
-            $total = $items->count();
-            $lastPage = max(1, (int) ceil($total / $this->perPage));
-            $currentPage = min(max(1, (int) ($this->categoryPages[$key] ?? 1)), $lastPage);
-
-            if (($this->categoryPages[$key] ?? null) !== $currentPage) {
-                $this->categoryPages[$key] = $currentPage;
-            }
-
-            $offset = ($currentPage - 1) * $this->perPage;
-
-            $groups[] = [
-                'category_id' => (int) $categoryId,
-                'title' => $category->name,
-                'items' => $items->slice($offset, $this->perPage)->values(),
-                'total' => $total,
-                'currentPage' => $currentPage,
-                'lastPage' => $lastPage,
-            ];
-        }
-
-        if ($categoryMap->isEmpty()) {
-            foreach ($grouped as $categoryId => $items) {
-                $key = (string) $categoryId;
-                $total = $items->count();
-                $lastPage = max(1, (int) ceil($total / $this->perPage));
-                $currentPage = min(max(1, (int) ($this->categoryPages[$key] ?? 1)), $lastPage);
-
-                if (($this->categoryPages[$key] ?? null) !== $currentPage) {
-                    $this->categoryPages[$key] = $currentPage;
-                }
-
-                $offset = ($currentPage - 1) * $this->perPage;
-
-                $groups[] = [
-                    'category_id' => (int) $categoryId,
-                    'title' => $items->first()?->category?->name ?? 'Uncategorized',
-                    'items' => $items->slice($offset, $this->perPage)->values(),
-                    'total' => $total,
-                    'currentPage' => $currentPage,
-                    'lastPage' => $lastPage,
-                ];
-            }
-        }
-
-        return $groups;
+            ->paginate($this->perPage, ['*'], 'page', $this->page);
     }
 
-    protected function categoryLastPage(int $categoryId): int
-    {
-        $count = ProjectSlider::query()
-            ->where('project_id', $this->projectId)
-            ->where('project_category_id', $categoryId === 0 ? null : $categoryId)
-            ->when($this->search !== '', function ($query) {
-                $query->where(function ($nested) {
-                    $nested->where('type', 'like', '%' . $this->search . '%')
-                        ->orWhere('description', 'like', '%' . $this->search . '%');
-                });
-            })
-            ->count();
-
-        return max(1, (int) ceil($count / $this->perPage));
-    }
-
-    protected function nextSortOrderForCategory(int $categoryId): int
+    protected function nextSortOrder(): int
     {
         $maxSort = (int) (
             ProjectSlider::query()
                 ->where('project_id', $this->projectId)
-                ->where('project_category_id', $categoryId)
                 ->max('sort_order') ?? 0
         );
 
         return $maxSort + 1;
-    }
-
-    public function categoryOptions()
-    {
-        $projectCategories = ProjectCategory::query()
-            ->where('is_active', true)
-            ->whereHas('projects', fn ($query) => $query->where('projects.id', $this->projectId))
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        if ($projectCategories->isNotEmpty()) {
-            return $projectCategories;
-        }
-
-        return ProjectCategory::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
     }
 
     public function typeOptions(): array
