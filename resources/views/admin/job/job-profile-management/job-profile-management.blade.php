@@ -135,7 +135,7 @@
             <div x-show="modalOpen" class="fixed inset-0 z-90 flex items-center justify-center p-4">
                 <div @click="modalOpen=false" class="absolute inset-0 bg-slate-900/50"></div>
 
-                <div x-show="modalOpen" x-transition x-trap.inert.noscroll="modalOpen" class="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+                <div x-show="modalOpen" x-transition class="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
                     <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-900">{{ $profileId ? 'Edit Job Profile' : 'Add Job Profile' }}</h3>
@@ -172,10 +172,11 @@
 
                                 <div
                                     wire:ignore
-                                    x-data="jobDescriptionTinyMce(@entangle('job_description').live)"
+                                    x-data="jobDescriptionTinyMce(@entangle('job_description'))"
+                                    x-on:open-modal.window="boot()"
                                     x-on:tinymce-set-content.window="setContent($event.detail.content || '')"
                                 >
-                                    <textarea x-ref="editor"></textarea>
+                                    <textarea x-ref="editor" data-job-description-editor="true"></textarea>
                                 </div>
 
                                 @error('job_description') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
@@ -215,30 +216,125 @@
 </div>
 
 @once
-    <script src="{{ asset('tinymce/tinymce.min.js') }}"></script>
+    <script src="https://cdn.tiny.cloud/1/pvxf2rey6dhbd0zfoep9pxag4n66tqcoa74t54qq0aybqjbs/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script>
+        window.addEventListener('load', () => {
+            if (typeof tinymce !== 'undefined') {
+                return;
+            }
+
+            const fallback = document.createElement('script');
+            fallback.src = "{{ asset('tinymce/tinymce.min.js') }}";
+            document.head.appendChild(fallback);
+        });
+    </script>
+    <style>
+        .tox-tinymce-aux,
+        .tox-dialog,
+        .tox-menu,
+        .tox-collection,
+        .tox-pop,
+        .mce-container,
+        .moxman-window {
+            z-index: 12000 !important;
+        }
+    </style>
 @endonce
 
 <script>
-    function jobDescriptionTinyMce(contentModel) {
-        return {
-            content: contentModel,
-            editor: null,
+    (() => {
+        if (window.__jobDescriptionTinyMceRegistered) {
+            return;
+        }
 
-            init() {
-                this.$nextTick(() => {
+        window.__jobDescriptionTinyMceRegistered = true;
+
+        window.jobDescriptionTinyMce = function (contentModel) {
+            return {
+                content: contentModel,
+                editor: null,
+                editorId: null,
+                isSyncingFromEditor: false,
+
+                init() {
+                    this.$watch('content', (value) => {
+                        if (this.isSyncingFromEditor || !this.editor || !this.editor.initialized) {
+                            return;
+                        }
+
+                        // Do not force-set content while typing; it steals caret/cursor position.
+                        if (this.editor.hasFocus()) {
+                            return;
+                        }
+
+                        const nextContent = value || '';
+                        if (this.editor.getContent() !== nextContent) {
+                            this.editor.setContent(nextContent);
+                        }
+                    });
+
+                    this.boot();
+                },
+
+                boot() {
+                    this.$nextTick(() => {
+                        this.waitAndInit(0);
+                    });
+                },
+
+                waitAndInit(attempt) {
                     if (typeof tinymce === 'undefined') {
+                        if (attempt < 20) {
+                            setTimeout(() => this.waitAndInit(attempt + 1), 100);
+                        }
                         return;
                     }
 
+                    this.initializeEditor();
+                },
+
+                initializeEditor() {
+                    if (!this.$refs.editor) {
+                        return;
+                    }
+
+                    if (!this.editorId) {
+                        this.editorId = `job-description-editor-${Math.random().toString(36).slice(2, 10)}`;
+                    }
+
+                    this.$refs.editor.id = this.editorId;
+
+                    const existing = tinymce.get(this.editorId);
+                    if (existing) {
+                        existing.remove();
+                    }
+
                     tinymce.init({
-                        target: this.$refs.editor,
-                        menubar: false,
+                        selector: `#${this.editorId}`,
+                        menubar: true,
                         branding: false,
+                        promotion: false,
+                        readonly: false,
                         height: 320,
-                        plugins: 'lists link image code table searchreplace wordcount',
-                        toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | link image table | alignleft aligncenter alignright | code',
-                        skin: 'oxide',
-                        content_css: 'default',
+                        plugins: 'autolink advlist lists link anchor image table code codesample searchreplace wordcount charmap',
+                        toolbar: 'undo redo | blocks fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link unlink anchor | image table | codesample code | removeformat',
+                        toolbar_mode: 'sliding',
+                        block_formats: 'Paragraph=p;Heading 2=h2;Heading 3=h3;Preformatted=pre',
+                        codesample_global_prismjs: false,
+                        codesample_languages: [
+                            { text: 'HTML/XML', value: 'markup' },
+                            { text: 'CSS', value: 'css' },
+                            { text: 'JavaScript', value: 'javascript' },
+                            { text: 'PHP', value: 'php' },
+                            { text: 'Bash', value: 'bash' },
+                            { text: 'JSON', value: 'json' }
+                        ],
+                        content_style: 'pre { background:#0f172a; color:#e2e8f0; padding:12px; border-radius:8px; overflow:auto; } code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }',
+                        convert_urls: true,
+                        relative_urls: false,
+                        remove_script_host: false,
+                        link_assume_external_targets: true,
+                        default_link_target: '_blank',
                         setup: (editor) => {
                             this.editor = editor;
 
@@ -246,21 +342,42 @@
                                 editor.setContent(this.content || '');
                             });
 
-                            editor.on('change keyup undo redo input', () => {
+                            editor.on('change keyup undo redo input SetContent', () => {
+                                this.isSyncingFromEditor = true;
                                 this.content = editor.getContent();
+                                this.$nextTick(() => {
+                                    this.isSyncingFromEditor = false;
+                                });
                             });
                         },
                     });
-                });
-            },
+                },
 
-            setContent(value) {
-                this.content = value || '';
+                setContent(value) {
+                    this.content = value || '';
 
-                if (this.editor && this.editor.initialized) {
-                    this.editor.setContent(this.content);
+                    if (this.editor && this.editor.initialized && this.editor.getContent() !== this.content) {
+                        this.editor.setContent(this.content);
+                    }
+                },
+
+                destroy() {
+                    if (this.editor) {
+                        this.editor.remove();
+                        this.editor = null;
+                    }
                 }
-            }
+            };
         };
-    }
+
+        document.addEventListener('livewire:navigating', () => {
+            if (typeof tinymce === 'undefined') {
+                return;
+            }
+
+            tinymce.editors
+                .filter((editor) => editor.getElement()?.hasAttribute('data-job-description-editor'))
+                .forEach((editor) => editor.remove());
+        });
+    })();
 </script>
