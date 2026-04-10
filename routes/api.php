@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
     Route::get('/categories', [PublicDataController::class, 'categories'])->name('api.v1.categories.index');
+    Route::get('/projects', [PublicDataController::class, 'projects'])->name('api.v1.projects.index');
     Route::get('/settings', [PublicDataController::class, 'settings'])->name('api.v1.settings.show');
     Route::post('/job-applications', [JobApplicationController::class, 'store'])
         ->middleware('throttle:job-applications')
