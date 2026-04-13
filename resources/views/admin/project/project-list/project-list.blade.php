@@ -1,5 +1,5 @@
 
-@php($projects = $this->projectsPaginator())
+@php($projects = $this->projects)
 
 <div class="mx-auto max-w-7xl space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-6 lg:px-8">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -44,7 +44,6 @@
             <table class="min-w-full text-sm">
                 <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
                     <tr>
-                        <th class="px-4 py-4 text-left">Sort</th>
                         <th class="px-6 py-4 text-left">Thumbnail</th>
                         <th class="px-6 py-4 text-left">Title</th>
                         <th class="px-6 py-4 text-left">Main Image</th>
@@ -53,14 +52,9 @@
                         <th class="px-6 py-4 text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody wire:sort="sortItem" class="divide-y divide-slate-100">
+                <tbody class="divide-y divide-slate-100">
                     @forelse ($projects as $project)
-                        <tr wire:key="project-{{ $project->id }}" wire:sort:item="{{ $project->id }}" class="hover:bg-slate-50/80">
-                            <td class="px-4 py-4">
-                                <button type="button" wire:sort:handle class="cursor-grab rounded-md border border-slate-200 p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing" title="Drag to reorder">
-                                    <i class="ri-draggable"></i>
-                                </button>
-                            </td>
+                        <tr wire:key="project-{{ $project->id }}" class="hover:bg-slate-50/80">
                             <td class="px-6 py-4">
                                 @if ($project->project_thumbnail)
                                     <img src="{{ asset('storage/' . $project->project_thumbnail) }}" alt="{{ $project->project_name }} thumbnail" class="h-14 w-20 rounded-lg object-cover ring-1 ring-slate-200">
@@ -124,18 +118,13 @@
             </table>
         </div>
 
-        <div wire:sort="sortItem" class="space-y-3 p-3 lg:hidden">
+        <div class="space-y-3 p-3 lg:hidden">
             @forelse ($projects as $project)
-                <article wire:key="project-mobile-{{ $project->id }}" wire:sort:item="{{ $project->id }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <article wire:key="project-mobile-{{ $project->id }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="truncate font-medium text-slate-900">{{ $project->project_name }}</p>
                             <p class="mt-0.5 truncate text-xs text-slate-500">{{ $project->client_name }}</p>
-                        </div>
-                        <div>
-                            <button type="button" wire:sort:handle class="cursor-grab rounded-md border border-slate-200 p-1 text-slate-500 active:cursor-grabbing">
-                                <i class="ri-draggable text-[13px]"></i>
-                            </button>
                         </div>
                     </div>
 
@@ -209,12 +198,8 @@
             <p class="text-xs text-slate-500">Showing {{ $projects->count() }} of {{ $projects->total() }} projects</p>
 
             @if ($projects->lastPage() > 1)
-                <div class="flex items-center gap-1">
-                    <button type="button" wire:click="previousPage" @disabled($page <= 1) class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Prev</button>
-                    @for ($i = 1; $i <= $projects->lastPage(); $i++)
-                        <button type="button" wire:click="gotoPage({{ $i }})" class="rounded-md px-2 py-1 text-xs {{ $page === $i ? 'bg-emerald-700 text-white' : 'border border-slate-300 text-slate-600 hover:bg-slate-50' }}">{{ $i }}</button>
-                    @endfor
-                    <button type="button" wire:click="nextPage" @disabled($page >= $projects->lastPage()) class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+                <div>
+                    {{ $projects->links('vendor.livewire.tailwind') }}
                 </div>
             @endif
         </div>

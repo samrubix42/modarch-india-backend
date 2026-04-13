@@ -4,19 +4,19 @@ use App\Models\Project;
 use App\Models\ProjectCategory;
 use App\Models\ProjectStatus;
 use App\Models\ProjectTag;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 new #[Layout('layouts::app')] class extends Component {
     use WithFileUploads;
+    use WithPagination;
 
     public string $search = '';
-    public int $perPage = 10;
-    public int $page = 1;
+    public int $perPage = 2;
 
     public ?int $projectId = null;
     public ?int $deleteId = null;
@@ -44,14 +44,14 @@ new #[Layout('layouts::app')] class extends Component {
 
     public function updatedSearch(): void
     {
-        $this->page = 1;
+        $this->resetPage();
     }
 
     public function updatedPerPage($value): void
     {
         $allowed = [10, 25, 50];
         $this->perPage = in_array((int) $value, $allowed, true) ? (int) $value : 10;
-        $this->page = 1;
+        $this->resetPage();
     }
 
     public function updatedProjectName(string $value): void
@@ -216,69 +216,7 @@ new #[Layout('layouts::app')] class extends Component {
         ]);
     }
 
-    public function sortItem(...$payload): void
-    {
-        $item = $payload[0] ?? null;
-        $position = $payload[1] ?? 0;
-
-        if (is_array($item) && isset($item['value'])) {
-            $itemId = (int) $item['value'];
-        } elseif (is_scalar($item)) {
-            $itemId = (int) $item;
-        } else {
-            $itemId = 0;
-        }
-
-        $targetPosition = max(0, (int) $position);
-        if ($itemId === 0) {
-            return;
-        }
-
-        $orderedIds = Project::query()->orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
-        $currentIndex = array_search($itemId, $orderedIds, true);
-        if ($currentIndex === false) {
-            return;
-        }
-
-        array_splice($orderedIds, $currentIndex, 1);
-        if ($targetPosition > count($orderedIds)) {
-            $targetPosition = count($orderedIds);
-        }
-        array_splice($orderedIds, $targetPosition, 0, [$itemId]);
-
-        // Keep a stable visual order by syncing sorted ids to created_at sequence.
-        foreach ($orderedIds as $index => $id) {
-            Project::whereKey($id)->update(['updated_at' => now()->subSeconds(count($orderedIds) - $index)]);
-        }
-
-        $this->dispatch('toast-show', [
-            'message' => 'Project order updated successfully!',
-            'type' => 'success',
-            'position' => 'top-right',
-        ]);
-    }
-
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->projectsPaginator()->lastPage()) {
-            $this->page++;
-        }
-    }
-
-    public function gotoPage(int $page): void
-    {
-        $last = $this->projectsPaginator()->lastPage();
-        $this->page = min(max(1, $page), max(1, $last));
-    }
-
-    public function projectsPaginator(): LengthAwarePaginator
+    public function getProjectsProperty()
     {
         return Project::query()
             ->with(['tag', 'status', 'categories'])
@@ -290,7 +228,7 @@ new #[Layout('layouts::app')] class extends Component {
                 });
             })
             ->orderByDesc('updated_at')
-            ->paginate($this->perPage, ['*'], 'page', $this->page);
+            ->paginate($this->perPage);
     }
 
     public function tagOptions()
