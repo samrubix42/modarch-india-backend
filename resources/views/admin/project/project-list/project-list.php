@@ -16,7 +16,7 @@ new #[Layout('layouts::app')] class extends Component {
     use WithPagination;
 
     public string $search = '';
-    public int $perPage = 2;
+    public int $perPage = 10;
 
     public ?int $projectId = null;
     public ?int $deleteId = null;
@@ -120,7 +120,7 @@ new #[Layout('layouts::app')] class extends Component {
             'client_name' => ['required', 'string', 'max:255'],
             'project_name' => ['required', 'string', 'max:255'],
             'project_address' => ['nullable', 'string', 'max:255'],
-            'site_area' => ['required', 'string', 'max:255'],
+            'site_area' => ['nullable', 'string', 'max:255'],
             'built_up_area' => ['nullable', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', Rule::unique('projects', 'slug')->ignore($this->projectId)],
             'project_thumbnail' => ['nullable', 'image', 'max:4096'],
