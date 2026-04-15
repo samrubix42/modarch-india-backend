@@ -63,6 +63,8 @@ new #[Layout('layouts::app')] class extends Component {
         if ($this->type !== ContentType::DESCRIPTION->value) {
             $this->description = null;
         }
+
+        $this->dispatch('tinymce-set-project-slider-description', content: $this->description ?? '');
     }
 
     public function openCreateModal(): void
@@ -83,6 +85,8 @@ new #[Layout('layouts::app')] class extends Component {
         $this->existing_image = null;
         $this->existing_video = null;
         $this->deleteId = null;
+
+        $this->dispatch('tinymce-set-project-slider-description', content: '');
     }
 
     public function openEditModal(int $id): void
@@ -99,6 +103,8 @@ new #[Layout('layouts::app')] class extends Component {
         $this->existing_video = $slider->video;
         $this->image_files = [];
         $this->video_file = null;
+
+        $this->dispatch('tinymce-set-project-slider-description', content: $this->description ?? '');
     }
 
     public function confirmDelete(int $id): void

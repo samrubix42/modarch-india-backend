@@ -253,13 +253,20 @@
                             </div>
                         @endif
 
-                        @if ($type === 'description')
-                            <div>
-                                <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Description Content</label>
-                                <textarea wire:model.live="description" rows="5" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" placeholder="Write description content..."></textarea>
-                                @error('description') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                        <div @class(['hidden' => $type !== 'description'])>
+                            <label class="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">Description Content</label>
+
+                            <div
+                                wire:ignore
+                                x-data="projectSliderDescriptionTinyMce(@entangle('description'))"
+                                x-on:open-modal.window="boot()"
+                                x-on:tinymce-set-project-slider-description.window="setContent($event.detail.content || '')"
+                            >
+                                <textarea x-ref="editor" data-project-slider-description-editor="true"></textarea>
                             </div>
-                        @endif
+
+                            @error('description') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                        </div>
                     </div>
 
                     <div class="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
@@ -292,3 +299,169 @@
         </template>
     </div>
 </div>
+
+@once
+    <script src="https://cdn.tiny.cloud/1/pvxf2rey6dhbd0zfoep9pxag4n66tqcoa74t54qq0aybqjbs/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script>
+        window.addEventListener('load', () => {
+            if (typeof tinymce !== 'undefined') {
+                return;
+            }
+
+            const fallback = document.createElement('script');
+            fallback.src = "{{ asset('tinymce/tinymce.min.js') }}";
+            document.head.appendChild(fallback);
+        });
+    </script>
+    <style>
+        .tox-tinymce-aux,
+        .tox-dialog,
+        .tox-menu,
+        .tox-collection,
+        .tox-pop,
+        .mce-container,
+        .moxman-window {
+            z-index: 12000 !important;
+        }
+    </style>
+@endonce
+
+<script>
+    (() => {
+        if (window.__projectSliderDescriptionTinyMceRegistered) {
+            return;
+        }
+
+        window.__projectSliderDescriptionTinyMceRegistered = true;
+
+        window.projectSliderDescriptionTinyMce = function (contentModel) {
+            return {
+                content: contentModel,
+                editor: null,
+                editorId: null,
+                isSyncingFromEditor: false,
+
+                init() {
+                    this.$watch('content', (value) => {
+                        if (this.isSyncingFromEditor || !this.editor || !this.editor.initialized) {
+                            return;
+                        }
+
+                        if (this.editor.hasFocus()) {
+                            return;
+                        }
+
+                        const nextContent = value || '';
+                        if (this.editor.getContent() !== nextContent) {
+                            this.editor.setContent(nextContent);
+                        }
+                    });
+
+                    this.boot();
+                },
+
+                boot() {
+                    this.$nextTick(() => {
+                        this.waitAndInit(0);
+                    });
+                },
+
+                waitAndInit(attempt) {
+                    if (typeof tinymce === 'undefined') {
+                        if (attempt < 20) {
+                            setTimeout(() => this.waitAndInit(attempt + 1), 100);
+                        }
+                        return;
+                    }
+
+                    this.initializeEditor();
+                },
+
+                initializeEditor() {
+                    if (!this.$refs.editor) {
+                        return;
+                    }
+
+                    if (!this.editorId) {
+                        this.editorId = `project-slider-description-editor-${Math.random().toString(36).slice(2, 10)}`;
+                    }
+
+                    this.$refs.editor.id = this.editorId;
+
+                    const existing = tinymce.get(this.editorId);
+                    if (existing) {
+                        existing.remove();
+                    }
+
+                    tinymce.init({
+                        selector: `#${this.editorId}`,
+                        menubar: true,
+                        branding: false,
+                        promotion: false,
+                        readonly: false,
+                        height: 320,
+                        plugins: 'autolink advlist lists link anchor image table code codesample searchreplace wordcount charmap',
+                        toolbar: 'undo redo | blocks fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link unlink anchor | image table | codesample code | removeformat',
+                        toolbar_mode: 'sliding',
+                        block_formats: 'Paragraph=p;Heading 2=h2;Heading 3=h3;Preformatted=pre',
+                        codesample_global_prismjs: false,
+                        codesample_languages: [
+                            { text: 'HTML/XML', value: 'markup' },
+                            { text: 'CSS', value: 'css' },
+                            { text: 'JavaScript', value: 'javascript' },
+                            { text: 'PHP', value: 'php' },
+                            { text: 'Bash', value: 'bash' },
+                            { text: 'JSON', value: 'json' }
+                        ],
+                        content_style: 'pre { background:#0f172a; color:#e2e8f0; padding:12px; border-radius:8px; overflow:auto; } code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }',
+                        convert_urls: true,
+                        relative_urls: false,
+                        remove_script_host: false,
+                        link_assume_external_targets: true,
+                        default_link_target: '_blank',
+                        setup: (editor) => {
+                            this.editor = editor;
+
+                            editor.on('init', () => {
+                                editor.setContent(this.content || '');
+                            });
+
+                            editor.on('change keyup undo redo input SetContent', () => {
+                                this.isSyncingFromEditor = true;
+                                this.content = editor.getContent();
+                                this.$nextTick(() => {
+                                    this.isSyncingFromEditor = false;
+                                });
+                            });
+                        },
+                    });
+                },
+
+                setContent(value) {
+                    this.content = value || '';
+
+                    if (this.editor && this.editor.initialized && this.editor.getContent() !== this.content) {
+                        this.editor.setContent(this.content);
+                    }
+                },
+
+                destroy() {
+                    if (this.editor) {
+                        this.editor.remove();
+                        this.editor = null;
+                    }
+                }
+            };
+        };
+
+        document.addEventListener('livewire:navigating', () => {
+            if (typeof tinymce === 'undefined') {
+                return;
+            }
+
+            tinymce.editors
+                .filter((editor) => editor.getElement()?.hasAttribute('data-project-slider-description-editor'))
+                .forEach((editor) => editor.remove());
+        });
+    })();
+</script>
