@@ -48,6 +48,18 @@ new #[Layout('layouts::app')] class extends Component {
         ]);
     }
 
+    public function deleteApplication(int $id): void
+    {
+        $application = AppliedJobs::query()->findOrFail($id);
+        $application->delete();
+
+        $this->dispatch('toast-show', [
+            'message' => 'Application deleted successfully!',
+            'type' => 'success',
+            'position' => 'top-right',
+        ]);
+    }
+
     public function openViewModal(int $id): void
     {
         $this->viewApplicationId = $id;

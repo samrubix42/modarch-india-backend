@@ -76,6 +76,15 @@
                                     @if ($application->resume_path)
                                         <a href="{{ route('admin.applied-jobs.download', ['appliedJob' => $application->id, 'type' => 'resume']) }}" class="rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100">Resume</a>
                                     @endif
+
+                                    <button
+                                        type="button"
+                                        wire:click="deleteApplication({{ $application->id }})"
+                                        wire:confirm="Are you sure you want to delete this application?"
+                                        class="rounded-md bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                                    >
+                                        Delete
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -121,6 +130,15 @@
                         @if ($application->resume_path)
                             <a href="{{ route('admin.applied-jobs.download', ['appliedJob' => $application->id, 'type' => 'resume']) }}" class="col-span-2 rounded-lg bg-emerald-50 px-3 py-2 text-center text-xs font-medium text-emerald-700">Download Resume</a>
                         @endif
+
+                        <button
+                            type="button"
+                            wire:click="deleteApplication({{ $application->id }})"
+                            wire:confirm="Are you sure you want to delete this application?"
+                            class="col-span-2 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700"
+                        >
+                            Delete Application
+                        </button>
                     </div>
                 </article>
             @empty
@@ -194,6 +212,16 @@
                             @if ($selected->portfolio_path)
                                 <a href="{{ route('admin.applied-jobs.download', ['appliedJob' => $selected->id, 'type' => 'portfolio']) }}" class="rounded-md bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700">Download Portfolio</a>
                             @endif
+
+                            <button
+                                type="button"
+                                wire:click="deleteApplication({{ $selected->id }})"
+                                wire:confirm="Are you sure you want to delete this application?"
+                                @click="viewOpen = false"
+                                class="rounded-md bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700"
+                            >
+                                Delete Application
+                            </button>
                         </div>
                     @else
                         <p class="text-sm text-slate-500">No application selected.</p>
